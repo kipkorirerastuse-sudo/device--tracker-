@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Tracker - Sending...</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f4f4f9; }
+        .card { background: white; padding: 30px; border-radius: 8px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        button { background: #007bff; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Device Location Transmitter</h2>
+        <p>Click below to start broadcasting this device's live location.</p>
+        <button onclick="startTracking()">Start Broadcasting</button>
+        <p id="status" style="margin-top: 20px; font-weight: bold; color: #555;"></p>
+    </div>
+
+    <script>
+        // REPLACE THESE WITH YOUR ACTUAL SUPABASE CREDENTIALS
+        const SUPABASE_URL = "https://your-project-id.supabase.co";
+        const SUPABASE_ANON_KEY = "your-anon-public-key";
+        
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function startTracking() {
+            const status = document.getElementById('status');
+            if (!navigator.geolocation) {
+                status.textContent = "Geolocation is not supported by this browser.";
+                return;
+            }
+
+            status.textContent = "Requesting permission...";
+            
+            // Track location continuously
+            navigator.geolocation.watchPosition(sendLocationToServer, handleError, {
+                enableHighAccuracy: true,
+                maximumAge: 0
+            });
+        }
+
+        async function sendLocationToServer(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            document.getElementById('status').innerHTML = `Tracking Live...<br>Lat: ${lat}<br>Lng: ${lng}`;
+
+            // Insert coordinates into Supabase
+            const { error } = await supabase
+                .from('device_locations')
+                .insert([{ latitude: lat, longitude: lng }]);
+
+            if (error) console.error('Error sending location:', error);
+        }
+
+        function handleError(err) {
+            document.getElementById('status').textContent = `Error: ${err.message}. Ensure location permissions are granted.`;
+        }
+    </script>
+</body>
+</html>
